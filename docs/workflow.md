@@ -1,0 +1,5 @@
+# Skills and delegated decisions
+Used Matt Pocock's upstream grill-with-docs, grilling, domain-modeling, implement, tdd, code-review (read 2026-10-11). Sources: https://github.com/mattpocock/skills/tree/main/skills
+Grilling's wait-for-interview-confirmation and TDD's seam confirmation are adapted to the explicit instruction to choose recommended decisions autonomously with no design questions. Settled tree: original coastal expression → three depths → seals and return objective → pure synchronous action seam → forgiving gold-loss recovery → local validated versioned saves → accessible DOM map. Facts gathered locally and from sources. Parallel standards/spec reviews follow code-review; initial documentation commit is the fixed point, docs/spec.md is the originating spec.
+
+Inspiration verified from https://en.wikipedia.org/wiki/Castle_of_the_Winds (tile-based Windows roguelike, mouse/keyboard, spells and inventory) and creator interview https://www.gamedeveloper.com/game-platforms/playing-catch-up-i-castle-of-the-winds-i-rick-saada (Windows origins and RPG design). No original assets/maps/characters/text copied.
