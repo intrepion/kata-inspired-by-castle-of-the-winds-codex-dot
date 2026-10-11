@@ -662,3 +662,34 @@ footer {
     transition: none !important;
   }
 }
+@media (max-width: 700px) {
+  .keeper {
+    display: block;
+  }
+  .keeper label {
+    margin-top: 12px;
+  }
+  .keeper h2 {
+    margin-top: 16px;
+  }
+  .keeper meter {
+    height: 14px;
+  }
+  .keeper .equipment {
+    grid-template-columns: 1fr 1fr;
+  }
+  .keeper .equipment span {
+    grid-column: 1;
+  }
+  .keeper .equipment strong {
+    grid-column: 2;
+  }
+  .dpad {
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(2, 44px);
+  }
+  .actions button,
+  nav button {
+    min-height: 44px;
+  }
+}
