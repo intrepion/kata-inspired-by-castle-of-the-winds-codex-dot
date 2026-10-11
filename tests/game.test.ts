@@ -1,23 +1,386 @@
-import {test} from 'node:test';
-import assert from 'node:assert/strict';
-import {newGame,act} from '../src/game.ts';
-test('a wall and a menu never advance a beat, a valid movement does',()=>{
-const s=newGame(42); assert.equal(act(s,{type:'move',dx:-1,dy:0}).turn,0); assert.equal(act(s,{type:'move',dx:1,dy:0}).turn,1);
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { newGame, act } from "../src/game.ts";
+test("a wall and a menu never advance a beat, a valid movement does", () => {
+  const s = newGame(42);
+  assert.equal(act(s, { type: "move", dx: -1, dy: 0 }).turn, 0);
+  assert.equal(act(s, { type: "move", dx: 1, dy: 0 }).turn, 1);
 });
-import {encode,decode} from '../src/save.ts';
-test('save round trip and malformed saves reject safely',()=>{const s=newGame(5);assert.deepEqual(decode(encode(s)),s);for(const raw of ['{','{}','null',JSON.stringify({...s,hp:-1}),JSON.stringify({...s,floors:[]})])assert.equal(decode(raw),null)});
-import {tile,los,visible,maxHp,maxMana,W,H,type Game} from '../src/game.ts';
-import {load,persist,SAVE_KEY,BACKUP_KEY} from '../src/save.ts';
-const descend=()=>{let s=newGame(42);for(let n=0;n<6;n++)s=act(s,{type:'move',dx:1,dy:0});for(let n=0;n<2;n++)s=act(s,{type:'move',dx:0,dy:1});return act(s,{type:'travel'})};
-const arena=()=>{const s=descend();s.floors[0].enemies=[];return s};
-test('stairs commit one safe beat and revisiting preserves claimed salvage',()=>{let s=descend();assert.equal(s.floor,1);assert.equal(s.turn,9);assert.equal(s.hp,28);s.floors[0].enemies=[];s.pos={x:8,y:2};s=act(s,{type:'move',dx:1,dy:0});const gold=s.gold;assert.equal(s.potions,4);s=act(s,{type:'move',dx:-1,dy:0});s=act(s,{type:'move',dx:1,dy:0});assert.equal(s.gold,gold);s.pos={...s.floors[0].up};s=act(s,{type:'travel'});assert.equal(s.floor,0);s=act(s,{type:'travel'});assert.equal(s.floors[0].loot.length,1)});
-test('bump strike consumes one beat, kills give one XP reward and level raises capacity',()=>{let s=arena();s.floors[0].enemies=[{x:4,y:2,id:10,name:'Crab',hp:4,attack:4,ranged:false,boss:false}];s=act(s,{type:'move',dx:1,dy:0});assert.equal(s.pos.x,3);assert.equal(s.xp,6);assert.equal(s.gold,26);assert.equal(s.hp,28);s.floors[0].enemies=[{x:4,y:2,id:11,name:'Crab',hp:4,attack:4,ranged:false,boss:false}];s=act(s,{type:'move',dx:1,dy:0});assert.equal(s.xp,12);assert.equal(maxHp(s),33);assert.equal(maxMana(s),14)});
-test('surviving melee attacks once after player action; failed wall and spell do not schedule',()=>{let s=arena();s.floors[0].enemies=[{x:4,y:2,id:10,name:'Crab',hp:20,attack:4,ranged:false,boss:false}];s=act(s,{type:'move',dx:1,dy:0});assert.equal(s.hp,25);const t=s.turn;s=act(s,{type:'bolt',target:999});assert.equal(s.turn,t);assert.equal(s.hp,25);s.pos={x:1,y:1};s=act(s,{type:'move',dx:-1,dy:0});assert.equal(s.turn,t)});
-test('bolt checks range, sight, cost and damage before scheduling responses',()=>{let s=arena();s.floors[0].enemies=[{x:7,y:2,id:10,name:'Crab',hp:20,attack:4,ranged:false,boss:false}];s=act(s,{type:'bolt',target:10});assert.equal(s.mana,9);assert.equal(s.floors[0].enemies[0].hp,11);assert.equal(s.turn,10);s.mana=2;const t=s.turn;s=act(s,{type:'bolt',target:10});assert.equal(s.turn,t);s.mana=12;s.floors[0].enemies[0].x=15;s=act(s,{type:'bolt',target:10});assert.equal(s.turn,t);assert.equal(los(s.floors[0],{x:3,y:2},{x:9,y:6}),false)});
-test('sentry attacks only within 4 clear tiles and pursuer moves one tile',()=>{let s=arena();s.floors[0].enemies=[{x:7,y:2,id:10,name:'Sentry',hp:20,attack:4,ranged:true,boss:false}];s=act(s,{type:'wait'});assert.equal(s.hp,25);assert.equal(s.floors[0].enemies[0].x,7);s.floors[0].enemies[0].ranged=false;s=act(s,{type:'wait'});assert.equal(s.hp,25);assert.equal(s.floors[0].enemies[0].x,6)});
-test('mend, draught and wait balance resources and clamp health/focus',()=>{let s=arena();s.hp=8;s=act(s,{type:'heal'});assert.equal(s.hp,20);assert.equal(s.mana,8);s=act(s,{type:'potion'});assert.equal(s.hp,28);assert.equal(s.potions,2);const t=s.turn;s=act(s,{type:'potion'});assert.equal(s.turn,t);s=act(s,{type:'wait'});assert.equal(s.mana,9)});
-test('shop conserves gold, rejects duplicates, sell excludes equipped and equipment affects combat',()=>{let s=newGame();s.gold=70;s=act(s,{type:'buy',item:'Tide axe'});assert.equal(s.gold,48);assert.equal(s.turn,0);s=act(s,{type:'buy',item:'Tide axe'});assert.equal(s.gold,48);s=act(s,{type:'equip',item:'Tide axe'});assert.equal(s.turn,1);assert.equal(maxMana(s),10);s=act(s,{type:'sell',item:'Tide axe'});assert.equal(s.gold,48);s=act(s,{type:'equip',item:'Harbor knife'});s=act(s,{type:'sell',item:'Tide axe'});assert.equal(s.gold,59);s=act(s,{type:'buy',item:'Shell mail'});s=act(s,{type:'equip',item:'Shell mail'});s.floor=1;s.pos={x:3,y:2};s.floors[0].enemies=[{x:4,y:2,id:10,name:'Crab',hp:20,attack:4,ranged:false,boss:false}];s=act(s,{type:'wait'});assert.equal(s.hp,27)});
-test('death rescues with preserved progress and no subsequent enemy actions; rest restores',()=>{let s=arena();s.hp=1;s.floors[0].enemies=[{x:4,y:2,id:10,name:'Crab',hp:20,attack:4,ranged:false,boss:false},{x:3,y:3,id:11,name:'Crab',hp:20,attack:4,ranged:false,boss:false}];s=act(s,{type:'wait'});assert.equal(s.floor,0);assert.equal(s.deaths,1);assert.equal(s.gold,0);assert.equal(s.hp,maxHp(s));s.hp=3;s.mana=0;s=act(s,{type:'rest'});assert.equal(s.hp,28);assert.equal(s.mana,12);assert.equal(newGame(99).deaths,0)});
-test('seal reward is one-time, final objective requires guardian and return, victory locks actions',()=>{let s=arena();s.pos={x:14,y:6};s=act(s,{type:'move',dx:1,dy:0});assert.equal(s.seals,1);s=act(s,{type:'move',dx:-1,dy:0});s=act(s,{type:'move',dx:1,dy:0});assert.equal(s.seals,1);s.floor=0;s=act(s,{type:'light'});assert.equal(s.won,false);s.seals=3;s=act(s,{type:'light'});assert.equal(s.won,false);s.bossDead=true;s=act(s,{type:'light'});assert.equal(s.won,true);assert.deepEqual(act(s,{type:'wait'}),s)});
-test('100 generated charts connect every passable tile and objective; fog blocks hidden enemies',()=>{for(let seed=0;seed<100;seed++){const s=newGame(seed);for(const f of s.floors){const queue=[f.up],seen=new Set([f.up.y*W+f.up.x]);for(let i=0;i<queue.length;i++)for(const [dx,dy]of [[1,0],[-1,0],[0,1],[0,-1]]){const p={x:queue[i].x+dx,y:queue[i].y+dy},k=p.y*W+p.x;if(tile(f,p)!=='#'&&!seen.has(k)){seen.add(k);queue.push(p)}}for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(tile(f,{x,y})!=='#')assert.ok(seen.has(y*W+x));assert.ok(seen.has(f.seal.y*W+f.seal.x));}assert.deepEqual(decode(encode(s)),s)}const s=descend();assert.equal(visible(s,{x:15,y:10}),false);assert.ok(s.floors[0].seen.length>0)});
-test('backup recovers corruption; storage exceptions stay safe; nested invalid data rejects',()=>{const entries=new Map<string,string>();const storage={getItem:(k:string)=>entries.get(k)??null,setItem:(k:string,v:string)=>{entries.set(k,v)}};let s=newGame();persist(storage,s);s=act(s,{type:'move',dx:1,dy:0});persist(storage,s);entries.set(SAVE_KEY,'garbage');assert.equal(load(storage).game?.turn,0);assert.match(load(storage).message,/previous valid/);entries.set(BACKUP_KEY,'bad');assert.equal(load(storage).game,null);assert.equal(persist({getItem:()=>{throw Error()},setItem:()=>{}},s),false);for(const change of [{floors:[null,null,null]},{weapon:'<script>'},{inventory:['nope']},{mana:999},{version:2}])assert.equal(decode(JSON.stringify({...s,...change})),null)});
+import { encode, decode } from "../src/save.ts";
+test("save round trip and malformed saves reject safely", () => {
+  const s = newGame(5);
+  assert.deepEqual(decode(encode(s)), s);
+  for (const raw of [
+    "{",
+    "{}",
+    "null",
+    JSON.stringify({ ...s, hp: -1 }),
+    JSON.stringify({ ...s, floors: [] }),
+  ])
+    assert.equal(decode(raw), null);
+});
+import {
+  tile,
+  los,
+  visible,
+  maxHp,
+  maxMana,
+  W,
+  H,
+  type Game,
+} from "../src/game.ts";
+import { load, persist, SAVE_KEY, BACKUP_KEY } from "../src/save.ts";
+const descend = () => {
+  let s = newGame(42);
+  for (let n = 0; n < 6; n++) s = act(s, { type: "move", dx: 1, dy: 0 });
+  for (let n = 0; n < 2; n++) s = act(s, { type: "move", dx: 0, dy: 1 });
+  return act(s, { type: "travel" });
+};
+const arena = () => {
+  const s = descend();
+  s.floors[0].enemies = [];
+  return s;
+};
+test("stairs commit one safe beat and revisiting preserves claimed salvage", () => {
+  let s = descend();
+  assert.equal(s.floor, 1);
+  assert.equal(s.turn, 9);
+  assert.equal(s.hp, 28);
+  s.floors[0].enemies = [];
+  s.pos = { x: 8, y: 2 };
+  s = act(s, { type: "move", dx: 1, dy: 0 });
+  const gold = s.gold;
+  assert.equal(s.potions, 4);
+  s = act(s, { type: "move", dx: -1, dy: 0 });
+  s = act(s, { type: "move", dx: 1, dy: 0 });
+  assert.equal(s.gold, gold);
+  s.pos = { ...s.floors[0].up };
+  s = act(s, { type: "travel" });
+  assert.equal(s.floor, 0);
+  s = act(s, { type: "travel" });
+  assert.equal(s.floors[0].loot.length, 1);
+});
+test("bump strike consumes one beat, kills give one XP reward and level raises capacity", () => {
+  let s = arena();
+  s.floors[0].enemies = [
+    {
+      x: 4,
+      y: 2,
+      id: 10,
+      name: "Crab",
+      hp: 4,
+      attack: 4,
+      ranged: false,
+      boss: false,
+    },
+  ];
+  s = act(s, { type: "move", dx: 1, dy: 0 });
+  assert.equal(s.pos.x, 3);
+  assert.equal(s.xp, 6);
+  assert.equal(s.gold, 26);
+  assert.equal(s.hp, 28);
+  s.floors[0].enemies = [
+    {
+      x: 4,
+      y: 2,
+      id: 11,
+      name: "Crab",
+      hp: 4,
+      attack: 4,
+      ranged: false,
+      boss: false,
+    },
+  ];
+  s = act(s, { type: "move", dx: 1, dy: 0 });
+  assert.equal(s.xp, 12);
+  assert.equal(maxHp(s), 33);
+  assert.equal(maxMana(s), 14);
+});
+test("surviving melee attacks once after player action; failed wall and spell do not schedule", () => {
+  let s = arena();
+  s.floors[0].enemies = [
+    {
+      x: 4,
+      y: 2,
+      id: 10,
+      name: "Crab",
+      hp: 20,
+      attack: 4,
+      ranged: false,
+      boss: false,
+    },
+  ];
+  s = act(s, { type: "move", dx: 1, dy: 0 });
+  assert.equal(s.hp, 25);
+  const t = s.turn;
+  s = act(s, { type: "bolt", target: 999 });
+  assert.equal(s.turn, t);
+  assert.equal(s.hp, 25);
+  s.pos = { x: 1, y: 1 };
+  s = act(s, { type: "move", dx: -1, dy: 0 });
+  assert.equal(s.turn, t);
+});
+test("bolt checks range, sight, cost and damage before scheduling responses", () => {
+  let s = arena();
+  s.floors[0].enemies = [
+    {
+      x: 7,
+      y: 2,
+      id: 10,
+      name: "Crab",
+      hp: 20,
+      attack: 4,
+      ranged: false,
+      boss: false,
+    },
+  ];
+  s = act(s, { type: "bolt", target: 10 });
+  assert.equal(s.mana, 9);
+  assert.equal(s.floors[0].enemies[0].hp, 11);
+  assert.equal(s.turn, 10);
+  s.mana = 2;
+  const t = s.turn;
+  s = act(s, { type: "bolt", target: 10 });
+  assert.equal(s.turn, t);
+  s.mana = 12;
+  s.floors[0].enemies[0].x = 15;
+  s = act(s, { type: "bolt", target: 10 });
+  assert.equal(s.turn, t);
+  assert.equal(los(s.floors[0], { x: 3, y: 2 }, { x: 9, y: 6 }), false);
+});
+test("sentry attacks only within 4 clear tiles and pursuer moves one tile", () => {
+  let s = arena();
+  s.floors[0].enemies = [
+    {
+      x: 7,
+      y: 2,
+      id: 10,
+      name: "Sentry",
+      hp: 20,
+      attack: 4,
+      ranged: true,
+      boss: false,
+    },
+  ];
+  s = act(s, { type: "wait" });
+  assert.equal(s.hp, 25);
+  assert.equal(s.floors[0].enemies[0].x, 7);
+  s.floors[0].enemies[0].ranged = false;
+  s = act(s, { type: "wait" });
+  assert.equal(s.hp, 25);
+  assert.equal(s.floors[0].enemies[0].x, 6);
+});
+test("mend, draught and wait balance resources and clamp health/focus", () => {
+  let s = arena();
+  s.hp = 8;
+  s = act(s, { type: "heal" });
+  assert.equal(s.hp, 20);
+  assert.equal(s.mana, 8);
+  s = act(s, { type: "potion" });
+  assert.equal(s.hp, 28);
+  assert.equal(s.potions, 2);
+  const t = s.turn;
+  s = act(s, { type: "potion" });
+  assert.equal(s.turn, t);
+  s = act(s, { type: "wait" });
+  assert.equal(s.mana, 9);
+});
+test("shop conserves gold, rejects duplicates, sell excludes equipped and equipment affects combat", () => {
+  let s = newGame();
+  s.gold = 70;
+  s = act(s, { type: "buy", item: "Tide axe" });
+  assert.equal(s.gold, 48);
+  assert.equal(s.turn, 0);
+  s = act(s, { type: "buy", item: "Tide axe" });
+  assert.equal(s.gold, 48);
+  s = act(s, { type: "equip", item: "Tide axe" });
+  assert.equal(s.turn, 1);
+  assert.equal(maxMana(s), 10);
+  s = act(s, { type: "sell", item: "Tide axe" });
+  assert.equal(s.gold, 48);
+  s = act(s, { type: "equip", item: "Harbor knife" });
+  s = act(s, { type: "sell", item: "Tide axe" });
+  assert.equal(s.gold, 59);
+  s = act(s, { type: "buy", item: "Shell mail" });
+  s = act(s, { type: "equip", item: "Shell mail" });
+  s.floor = 1;
+  s.pos = { x: 3, y: 2 };
+  s.floors[0].enemies = [
+    {
+      x: 4,
+      y: 2,
+      id: 10,
+      name: "Crab",
+      hp: 20,
+      attack: 4,
+      ranged: false,
+      boss: false,
+    },
+  ];
+  s = act(s, { type: "wait" });
+  assert.equal(s.hp, 27);
+});
+test("death rescues with preserved progress and no subsequent enemy actions; rest restores", () => {
+  let s = arena();
+  s.hp = 1;
+  s.floors[0].enemies = [
+    {
+      x: 4,
+      y: 2,
+      id: 10,
+      name: "Crab",
+      hp: 20,
+      attack: 4,
+      ranged: false,
+      boss: false,
+    },
+    {
+      x: 3,
+      y: 3,
+      id: 11,
+      name: "Crab",
+      hp: 20,
+      attack: 4,
+      ranged: false,
+      boss: false,
+    },
+  ];
+  s = act(s, { type: "wait" });
+  assert.equal(s.floor, 0);
+  assert.equal(s.deaths, 1);
+  assert.equal(s.gold, 0);
+  assert.equal(s.hp, maxHp(s));
+  s.hp = 3;
+  s.mana = 0;
+  s = act(s, { type: "rest" });
+  assert.equal(s.hp, 28);
+  assert.equal(s.mana, 12);
+  assert.equal(newGame(99).deaths, 0);
+});
+test("seal reward is one-time, final objective requires guardian and return, victory locks actions", () => {
+  let s = arena();
+  s.pos = { x: 14, y: 6 };
+  s = act(s, { type: "move", dx: 1, dy: 0 });
+  assert.equal(s.seals, 1);
+  s = act(s, { type: "move", dx: -1, dy: 0 });
+  s = act(s, { type: "move", dx: 1, dy: 0 });
+  assert.equal(s.seals, 1);
+  s.floor = 0;
+  s = act(s, { type: "light" });
+  assert.equal(s.won, false);
+  s.seals = 3;
+  s = act(s, { type: "light" });
+  assert.equal(s.won, false);
+  s.bossDead = true;
+  s = act(s, { type: "light" });
+  assert.equal(s.won, true);
+  assert.deepEqual(act(s, { type: "wait" }), s);
+});
+test("100 generated charts connect every passable tile and objective; fog blocks hidden enemies", () => {
+  for (let seed = 0; seed < 100; seed++) {
+    const s = newGame(seed);
+    for (const f of s.floors) {
+      const queue = [f.up],
+        seen = new Set([f.up.y * W + f.up.x]);
+      for (let i = 0; i < queue.length; i++)
+        for (const [dx, dy] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ]) {
+          const p = { x: queue[i].x + dx, y: queue[i].y + dy },
+            k = p.y * W + p.x;
+          if (tile(f, p) !== "#" && !seen.has(k)) {
+            seen.add(k);
+            queue.push(p);
+          }
+        }
+      for (let y = 0; y < H; y++)
+        for (let x = 0; x < W; x++)
+          if (tile(f, { x, y }) !== "#") assert.ok(seen.has(y * W + x));
+      assert.ok(seen.has(f.seal.y * W + f.seal.x));
+    }
+    assert.deepEqual(decode(encode(s)), s);
+  }
+  const s = descend();
+  assert.equal(visible(s, { x: 15, y: 10 }), false);
+  assert.ok(s.floors[0].seen.length > 0);
+});
+test("backup recovers corruption; storage exceptions stay safe; nested invalid data rejects", () => {
+  const entries = new Map<string, string>();
+  const storage = {
+    getItem: (k: string) => entries.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      entries.set(k, v);
+    },
+  };
+  let s = newGame();
+  persist(storage, s);
+  s = act(s, { type: "move", dx: 1, dy: 0 });
+  persist(storage, s);
+  entries.set(SAVE_KEY, "garbage");
+  assert.equal(load(storage).game?.turn, 0);
+  assert.match(load(storage).message, /previous valid/);
+  entries.set(BACKUP_KEY, "bad");
+  assert.equal(load(storage).game, null);
+  assert.equal(
+    persist(
+      {
+        getItem: () => {
+          throw Error();
+        },
+        setItem: () => {},
+      },
+      s,
+    ),
+    false,
+  );
+  for (const change of [
+    { floors: [null, null, null] },
+    { weapon: "<script>" },
+    { inventory: ["nope"] },
+    { mana: 999 },
+    { version: 2 },
+  ])
+    assert.equal(decode(JSON.stringify({ ...s, ...change })), null);
+});
+test("save rejects prototype inventory and keeper marooned in isolated terrain", () => {
+  const s = newGame();
+  s.inventory.push("toString");
+  assert.equal(decode(encode(s)), null);
+  const isolated = descend();
+  const row = isolated.floors[0].tiles[0];
+  isolated.floors[0].tiles[0] = "." + row.slice(1);
+  isolated.pos = { x: 0, y: 0 };
+  assert.equal(decode(encode(isolated)), null);
+});
+test("first blocking wall is visible and remembered while cells behind it are hidden", () => {
+  const s = descend();
+  assert.equal(visible(s, { x: 3, y: 0 }), true);
+  assert.ok(s.floors[0].seen.includes(3));
+  assert.equal(visible(s, { x: 6, y: 1 }), true);
+  assert.equal(visible(s, { x: 7, y: 0 }), false);
+});
+test("corrupt guardian flags, enemy HTML and duplicate salvage cannot enter the expedition", () => {
+  for (const mutate of [
+    (s: Game) => {
+      s.floors[2].enemies[3].boss = false;
+      s.floors[0].enemies[0].boss = true;
+      s.bossDead = true;
+    },
+    (s: Game) => {
+      s.floors[0].enemies[0].name = "<img src=x onerror=alert(1)>";
+    },
+    (s: Game) => {
+      s.floors[0].loot = [
+        { x: 9, y: 2 },
+        { x: 9, y: 2 },
+      ];
+    },
+  ]) {
+    const s = newGame();
+    mutate(s);
+    assert.equal(decode(encode(s)), null);
+  }
+});
