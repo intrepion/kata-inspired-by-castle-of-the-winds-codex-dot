@@ -6,6 +6,9 @@ import {
   H,
   names,
   ITEMS,
+  SPELLS,
+  BOOK_COST,
+  type Spell,
   maxHp,
   maxMana,
   visible,
@@ -19,6 +22,7 @@ const loaded = load(localStorage);
 let game: Game = loaded.game ?? newGame();
 let tab = "pack",
   aim = false,
+  blinkAim = false,
   restart = false,
   notice = loaded.message;
 const esc = (s: string) =>
@@ -107,8 +111,8 @@ function render() {
   root.innerHTML = `<header><div class="brand-mark">✧</div><div><p class="eyebrow">A KEEPER'S EXPEDITION</p><h1>The Lantern Below</h1></div><div class="header-right"><span class="seed">CHART ${game.seed}</span>${button(restart ? "Confirm new expedition" : "New expedition", "restart")}</div></header>
 <div class="objective"><span class="orb">${game.won ? "☀" : "✧"}</span><div><strong>${game.won ? "The coast has its light again." : "Bring the light home."}</strong><span>${game.won ? "Your voyage is complete. Start a new chart whenever you are ready." : "Recover three beacon seals. Silence the Bellkeeper. Return to refuge."}</span></div><b>${game.seals} / 3 SEALS</b></div>
 <main><aside class="panel keeper"><div class="titlebar">01 <span>THE KEEPER</span><i>◈</i></div><div class="portrait">♙<span>BEACON WARDEN</span></div><h2>Keeper of Salt</h2><p class="muted">Level ${1 + Math.floor(game.xp / 12)} · ${game.xp} experience</p><label>Vitality <b>${game.hp} / ${maxHp(game)}</b></label><meter min="0" max="${maxHp(game)}" value="${game.hp}"></meter><label>Focus <b>${game.mana} / ${maxMana(game)}</b></label><meter class="focus" min="0" max="${maxMana(game)}" value="${game.mana}"></meter><div class="purse"><span>◉ ${game.gold} gold</span><span>⚱ ${game.potions} draughts</span></div><div class="equipment"><span>IN HAND</span><strong>${esc(game.weapon)}</strong><span>WORN</span><strong>${esc(game.armor)}</strong></div><p class="muted">Melee ${ITEMS[game.weapon].attack} · armor ${ITEMS[game.armor].defense}<br>Beat ${game.turn} · rescues ${game.deaths}</p><div class="legend"><span>♙ keeper</span><span>♣ pursuer</span><span>♟ sentry</span><span>✧ seal</span><span>▣ salvage</span><span>↟ ↡ stairs</span></div></aside>
-<section class="panel chart"><div class="titlebar">02 <span>${names[game.floor].toUpperCase()}</span><i>${game.floor ? "DEPTH " + game.floor : "SAFE HARBOR"}</i></div><div class="map-heading"><h2>${game.floor ? "Below the tide line" : "A moment of shelter"}</h2><span>${aim ? "BOLT READY · CHOOSE TARGET" : "ONE ACTION. ONE BEAT."}</span></div><div class="map ${game.floor ? "" : "hub"}" role="group" aria-label="${names[game.floor]} tile map" style="--columns:${size.w}">${Array.from({ length: size.h }, (_, y) => Array.from({ length: size.w }, (_, x) => cell(x, y)).join("")).join("")}</div><p class="map-caption">${game.floor ? "Remembered stone stays on your chart. Inhabitants only appear in sight." : "The refuge is safe. Rest, trade, then cross to the east gate (↡)."}</p><div class="actions">${button("↟↡ Travel · 1 beat", "travel")}${button("⌛ Wait · +1 focus", "wait")}${button("✦ Bolt · 3 focus", "aim", aim ? 'aria-pressed="true"' : 'aria-pressed="false"')}${button("✚ Mend · 4 focus", "heal")}${button("⚱ Draught · 1 beat", "potion")}${!game.floor ? button("☕ Rest · free", "rest") + button("☀ Light beacon", "light") : ""}</div><div class="below-map"><div class="dpad">${button("↑", "north", 'aria-label="Move north"')}${button("←", "west", 'aria-label="Move west"')}${button("↓", "south", 'aria-label="Move south"')}${button("→", "east", 'aria-label="Move east"')}</div><p>Arrow keys / WASD to move or strike.<br>Space waits · E travels · H mends · P drinks.<br>Click an adjacent tile to step. Click a foe to inspect.</p></div>${nearby.length ? `<div class="targets"><strong>IN SIGHT</strong>${nearby.map((e) => button(`${esc(e.name)} · ${e.hp} HP${e.ranged ? " · rings within 4 tiles" : ""}`, `inspect:${e.id}`) + button("Cast bolt", `bolt:${e.id}`)).join("")}</div>` : ""}</section>
-<aside class="panel supplies"><div class="titlebar">03 <span>FIELD DESK</span><i>▤</i></div><nav aria-label="Field desk tabs">${["pack", "journal", "guide", ...(!game.floor ? ["shop"] : [])].map((t) => button(t[0].toUpperCase() + t.slice(1), "tab:" + t, `aria-pressed="${tab === t}"`)).join("")}</nav><div class="desk-content">${desk()}</div></aside></main><footer><span>THE LANTERN BELOW · AN ORIGINAL ADVENTURE</span><span>${esc(notice || "Autosaved after every action · no time passes while you read.")}</span></footer>${game.won ? '<div class="ending" role="status"><span>☀</span><h2>A light upon the water</h2><p>Three seals hum in the lantern. Far beyond the breakwater, a ship answers with a small golden light.</p><p>You have brought them home.</p></div>' : ""}`;
+<section class="panel chart"><div class="titlebar">02 <span>${names[game.floor].toUpperCase()}</span><i>${game.floor ? "DEPTH " + game.floor : "SAFE HARBOR"}</i></div><div class="map-heading"><h2>${game.floor ? "Below the tide line" : "A moment of shelter"}</h2><span>${aim ? (blinkAim ? "BLINK READY · CHOOSE FLOOR" : "BOLT READY · CHOOSE TARGET") : "ONE ACTION. ONE BEAT."}</span></div><div class="map ${game.floor ? "" : "hub"}" role="group" aria-label="${names[game.floor]} tile map" style="--columns:${size.w}">${Array.from({ length: size.h }, (_, y) => Array.from({ length: size.w }, (_, x) => cell(x, y)).join("")).join("")}</div><p class="map-caption">${game.floor ? "Remembered stone stays on your chart. Inhabitants only appear in sight." : "The refuge is safe. Rest, trade, then cross to the east gate (↡)."}</p><div class="actions">${button("↟↡ Travel · 1 beat", "travel")}${button("⌛ Wait · +1 focus", "wait")}${button("✦ Bolt · 3 focus", "aim", aim ? 'aria-pressed="true"' : 'aria-pressed="false"')}${button("✚ Mend · 4 focus", "heal")}${button("⚱ Draught · 1 beat", "potion")}${!game.floor ? button("☕ Rest · free", "rest") + button("☀ Light beacon", "light") : ""}</div><div class="below-map"><div class="dpad">${button("↑", "north", 'aria-label="Move north"')}${button("←", "west", 'aria-label="Move west"')}${button("↓", "south", 'aria-label="Move south"')}${button("→", "east", 'aria-label="Move east"')}</div><p>Arrow keys / WASD to move or strike.<br>Space waits · E travels · H mends · P drinks.<br>Click an adjacent tile to step. Click a foe to inspect.</p></div>${nearby.length ? `<div class="targets"><strong>IN SIGHT</strong>${nearby.map((e) => button(`${esc(e.name)} · ${e.hp} HP${e.ranged ? " · rings within 4 tiles" : ""}`, `inspect:${e.id}`) + button("Cast bolt", `bolt:${e.id}`)).join("")}</div>` : ""}</section>
+<aside class="panel supplies"><div class="titlebar">03 <span>FIELD DESK</span><i>▤</i></div><nav aria-label="Field desk tabs">${["pack", "spells", "journal", "guide", ...(!game.floor ? ["shop"] : [])].map((t) => button(t[0].toUpperCase() + t.slice(1), "tab:" + t, `aria-pressed="${tab === t}"`)).join("")}</nav><div class="desk-content">${desk()}</div></aside></main><footer><span>THE LANTERN BELOW · AN ORIGINAL ADVENTURE</span><span>${esc(notice || "Autosaved after every action · no time passes while you read.")}</span></footer>${game.won ? '<div class="ending" role="status"><span>☀</span><h2>A light upon the water</h2><p>Three seals hum in the lantern. Far beyond the breakwater, a ship answers with a small golden light.</p><p>You have brought them home.</p></div>' : ""}`;
   root.querySelectorAll<HTMLButtonElement>("button").forEach((b) =>
     b.addEventListener("click", () => {
       const a = b.dataset.action;
@@ -134,7 +138,11 @@ function render() {
           return;
         }
         restart = false;
+        if (a.startsWith("book:") || a.startsWith("learn:")) {dispatch({type:a.startsWith("book:")?"buyBook":"learn",spell:a.slice(a.indexOf(":")+1) as Spell});return;}
+        if (a === "cast:ward") {dispatch({type:"cast",spell:"ward"});return;}
+        if (a === "cast:blink") {aim=true;blinkAim=true;notice="BLINK: choose an empty floor tile within 3 clear steps.";render();return;}
         if (a === "aim") {
+          blinkAim = false;
           aim = !aim;
           render();
           return;
@@ -171,7 +179,9 @@ function render() {
       } else {
         const x = Number(b.dataset.x),
           y = Number(b.dataset.y);
-        if (aim && b.dataset.target) {
+        if (aim && blinkAim) {
+          aim = false;blinkAim = false;dispatch({type:"cast",spell:"blink",point:{x,y}});
+        } else if (aim && b.dataset.target) {
           aim = false;
           dispatch({ type: "bolt", target: Number(b.dataset.target) });
         } else if (b.dataset.target) {
@@ -184,6 +194,8 @@ function render() {
   );
 }
 function desk() {
+  if (tab === "spells") return `<h2>Learned magic</h2><p>Bolt and Mend are familiar. Primers expand your permanent repertoire. Learning costs one beat.</p><p>Ward remaining: ${game.ward} beats.</p>${game.books.map(spell => `<article><strong>${spell} primer</strong>${button("Learn · 1 beat","learn:"+spell)}</article>`).join("")}${game.learned.map(spell => `<article><strong>${spell}</strong><p>${spell === "ward" ? "4 focus · +3 defense for three responses; recast after expiry." : "5 focus · choose empty floor within 3 clear steps."}</p>${button("Cast "+spell,"cast:"+spell,game.floor?"":"disabled")}</article>`).join("") || "<p>No additional spells learned yet. Find a primer in salvage, or visit the refuge provisioner.</p>"}`;
+
   if (tab === "journal")
     return `<p class="eyebrow">LATEST FIRST</p><ol class="journal">${[
       ...game.log,
@@ -195,7 +207,7 @@ function desk() {
   if (tab === "guide")
     return `<h2>A careful descent</h2><p>Every successful move, strike, spell, equipment change, drink or stair crossing spends one beat. Enemies respond after that action.</p><p>Walls, inspection, menus, failed spells and refuge trade are free. Arrival at stairs is safe.</p><h3>Magic</h3><p>Bolt: range 5, line of sight, 3 focus, 9 damage (12 with wand). Mend: 4 focus, restores 12 health. Wait restores 1 focus but enemies act.</p><h3>Return alive</h3><p>Draughts restore 18 health. Refuge rest fully restores health and focus for free. Defeat costs carried gold, preserves progress, and returns you to refuge.</p><h3>Your chart</h3><p>Visit each seal ✧, defeat the Bellkeeper on depth 3, then return upstairs to refuge and light the beacon. Loot is collected on contact.</p>`;
   if (tab === "shop" && !game.floor)
-    return `<h2>The provisioner</h2><p class="muted">Trade here freely. Equipped items cannot be sold.</p>${["Draught", "Tide axe", "Glass wand", "Shell mail"].map((i) => `<article><strong>${i}</strong><p>${ITEMS[i]?.description ?? "Restores 18 health. Consumed when used."}</p>${button(`Buy · ${ITEMS[i]?.price ?? 8} gold`, "buy:" + i)}</article>`).join("")}`;
+    return `<h2>The provisioner</h2>${SPELLS.map(spell => `<article><strong>${spell} primer</strong><p>A permanent spell to learn; one copy only.</p>${button(`Buy · ${BOOK_COST[spell]} gold`,"book:"+spell,game.books.includes(spell)||game.learned.includes(spell)?"disabled":"")}</article>`).join("")}<p class="muted">Trade here freely. Equipped items cannot be sold.</p>${["Draught", "Tide axe", "Glass wand", "Shell mail"].map((i) => `<article><strong>${i}</strong><p>${ITEMS[i]?.description ?? "Restores 18 health. Consumed when used."}</p>${button(`Buy · ${ITEMS[i]?.price ?? 8} gold`, "buy:" + i)}</article>`).join("")}`;
   return `<h2>Travel light.</h2><p class="muted">Inspect your kit below. Changing equipment takes one beat.</p>${game.inventory.map((i) => `<article><strong>${i} ${game.weapon === i || game.armor === i ? "<em>equipped</em>" : ""}</strong><p>${ITEMS[i].description}</p>${game.weapon !== i && game.armor !== i ? button("Equip · 1 beat", "equip:" + i) + (!game.floor && ITEMS[i].price ? button(`Sell · ${Math.floor(ITEMS[i].price / 2)} gold`, "sell:" + i) : "") : ""}</article>`).join("")}<article><strong>Healing draught × ${game.potions}</strong><p>18 health. One beat. Use before you are surrounded.</p></article>`;
 }
 window.addEventListener("keydown", (e) => {

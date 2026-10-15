@@ -1,4 +1,4 @@
-import { type Game, ITEMS, W, H, maxHp, maxMana, tile, newGame } from "./game";
+import { type Game, SPELLS, ITEMS, W, H, maxHp, maxMana, tile, newGame } from "./game";
 export const SAVE_KEY = "lantern-below-v1",
   BACKUP_KEY = SAVE_KEY + "-backup";
 const integer = (n: unknown, min: number, max: number) =>
@@ -43,6 +43,10 @@ export function decode(raw: string | null): Game | null {
       s.floors.length !== 3
     )
       return null;
+    // Additive v1 migration preserves old expeditions and their canonical terrain.
+    if (s.books === undefined) s.books = []; if (s.learned === undefined) s.learned = []; if (s.ward === undefined) s.ward = 0;
+    const spells = (v:unknown) => Array.isArray(v) && v.length <= 2 && v.every(x => typeof x === "string" && (SPELLS as readonly string[]).includes(x)) && new Set(v).size === v.length;
+    if (!spells(s.books) || !spells(s.learned) || s.books.some((x:string) => s.learned.includes(x)) || !integer(s.ward,0,3) || s.ward > 0 && !s.learned.includes("ward")) return null;
     const canonical = newGame(s.seed);
     let seals = 0;
     for (const [index, f] of s.floors.entries()) {

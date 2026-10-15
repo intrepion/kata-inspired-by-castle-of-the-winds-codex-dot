@@ -19,6 +19,9 @@ export type Floor = {
   up: Point;
   down: Point;
 };
+export const SPELLS = ["ward", "blink"] as const;
+export type Spell = typeof SPELLS[number];
+export const BOOK_COST: Record<Spell,number> = {ward:6,blink:12};
 export type Game = {
   version: 1;
   seed: number;
@@ -32,6 +35,9 @@ export type Game = {
   weapon: string;
   armor: string;
   inventory: string[];
+  books: Spell[];
+  learned: Spell[];
+  ward: number;
   seals: number;
   bossDead: boolean;
   won: boolean;
@@ -41,6 +47,8 @@ export type Game = {
   log: string[];
 };
 export type Action =
+  | {type:"buyBook"|"learn";spell:Spell}
+  | {type:"cast";spell:Spell;point?:Point}
   | { type: "move"; dx: number; dy: number }
   | { type: "bolt"; target: number }
   | { type: "equip" | "buy" | "sell"; item: string }
@@ -225,6 +233,7 @@ export function newGame(seed = 2718): Game {
     weapon: "Harbor knife",
     armor: "Oilskin coat",
     inventory: ["Harbor knife", "Oilskin coat"],
+    books: [], learned: [], ward: 0,
     seals: 0,
     bossDead: false,
     won: false,
@@ -267,7 +276,7 @@ function enemyBeat(s: Game) {
   for (const e of f.enemies) {
     if (distance(e, s.pos) > 8 || !los(f, e, s.pos)) continue;
     if (distance(e, s.pos) === 1 || (e.ranged && distance(e, s.pos) <= 4)) {
-      const n = Math.max(1, e.attack - ITEMS[s.armor].defense);
+      const n = Math.max(1, e.attack - ITEMS[s.armor].defense - (s.ward > 0 ? 3 : 0));
       s.hp -= n;
       note(s, `${e.name} ${e.ranged ? "rings" : "strikes"} for ${n}.`);
     } else {
@@ -310,6 +319,7 @@ function enemyBeat(s: Game) {
       s.deaths++;
       s.gold = 0;
       s.floor = 0;
+      s.ward = 0;
       s.pos = { x: 1, y: 1 };
       s.hp = maxHp(s);
       s.mana = maxMana(s);
@@ -323,11 +333,29 @@ function enemyBeat(s: Game) {
 }
 export function act(original: Game, a: Action): Game {
   const s = structuredClone(original);
+  s.books ??= []; s.learned ??= []; s.ward ??= 0;
   if (s.won) return s;
   let committed = false,
     arrival = false;
   const f = s.floors[s.floor - 1];
-  if (a.type === "move") {
+  if (a.type === "buyBook") {
+    if (s.floor === 0 && SPELLS.includes(a.spell) && !s.books.includes(a.spell) && !s.learned.includes(a.spell) && s.gold >= BOOK_COST[a.spell]) {
+      s.gold -= BOOK_COST[a.spell]; s.books.push(a.spell); note(s, `Purchased ${a.spell} primer. Learn it in the Spells tab.`);
+    }
+  } else if (a.type === "learn") {
+    if (SPELLS.includes(a.spell) && s.books.includes(a.spell) && !s.learned.includes(a.spell)) {
+      s.books = s.books.filter(x => x !== a.spell); s.learned.push(a.spell); committed = true;
+      note(s, `Learned ${a.spell}. The primer is consumed; the spell remains yours.`);
+    }
+  } else if (a.type === "cast") {
+    if (s.floor && s.learned.includes(a.spell)) {
+      if (a.spell === "ward" && s.mana >= 4 && s.ward === 0) {
+        s.mana -= 4; s.ward = 3; committed = true; note(s, "Ward: 3 defense for this response and the next two beats.");
+      } else if (a.spell === "blink" && a.point && Number.isInteger(a.point.x) && Number.isInteger(a.point.y) && s.mana >= 5 && distance(s.pos,a.point) > 0 && distance(s.pos,a.point) <= 3 && tile(f,a.point) === "." && visible(s,a.point) && los(f,s.pos,a.point) && !f.enemies.some(e => e.x === a.point!.x && e.y === a.point!.y) && !f.loot.some(p => p.x === a.point!.x && p.y === a.point!.y) && !(!f.claimed && f.seal.x === a.point.x && f.seal.y === a.point.y)) {
+        s.mana -= 5; s.pos = {...a.point}; committed = true; note(s, "Blink: crossed clear space. Enemies take their beat.");
+      } else note(s, "Spell failed: check focus, active ward, or a clear unoccupied blink tile within 3 steps.");
+    } else note(s, "Learn the spell first; cast only in a dungeon.");
+  } else if (a.type === "move") {
     if (Math.abs(a.dx) + Math.abs(a.dy) !== 1) return s;
     const p = { x: s.pos.x + a.dx, y: s.pos.y + a.dy };
     if (s.floor === 0) {
@@ -345,6 +373,8 @@ export function act(original: Game, a: Action): Game {
           s.gold += 10;
           s.potions++;
           note(s, "Salvage found: 10 gold and a healing draught.");
+          const spell:Spell = s.floor === 1 ? "ward" : "blink";
+          if (!s.books.includes(spell) && !s.learned.includes(spell)) {s.books.push(spell);note(s, `Found a ${spell} primer. Choose Spells to learn it.`);}
         }
         if (!f.claimed && p.x === f.seal.x && p.y === f.seal.y) {
           f.claimed = true;
@@ -453,6 +483,7 @@ export function act(original: Game, a: Action): Game {
   if (committed) {
     s.turn++;
     if (s.floor && !arrival) enemyBeat(s);
+    if (s.ward > 0) s.ward--;
   }
   reveal(s);
   return s;
