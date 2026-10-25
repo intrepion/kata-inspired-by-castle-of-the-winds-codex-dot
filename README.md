@@ -41,3 +41,7 @@ Save v1 validates canonical seeded terrain and objectives, resource ranges, item
 The **Spells** desk tab now holds a permanent repertoire. First-depth salvage can contain a **Ward primer**; deeper salvage can contain **Blink**. The refuge Shop also sells the two primers (6 / 12 gold), so an existing explored save is not locked out. Learn consumes its primer and one beat; it cannot duplicate the spell.
 
 Ward costs 4 focus and adds 3 defense for the casting response plus two more committed beats. Blink costs 5 focus: choose a visible, unoccupied ordinary floor tile without salvage or an unclaimed seal, within three clear steps. Failed learning/casting spends no resources or beat. Valid casts allow one enemy response. Existing Bolt/Mend, gear and three-depth campaign remain. Old v1 saves and backups acquire empty learned/book fields safely; all existing progress remains. [Research and acceptance](docs/fidelity-spellbooks.md).
+
+## Play online
+
+[Play the hosted game](https://intrepion.github.io/kata-inspired-by-castle-of-the-winds-codex-dot/)
