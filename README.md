@@ -45,3 +45,7 @@ Ward costs 4 focus and adds 3 defense for the casting response plus two more com
 ## Play online
 
 [Play the hosted game](https://intrepion.github.io/kata-inspired-by-castle-of-the-winds-codex-dot/)
+
+## Arcade metadata
+
+See [docs/arcade-metadata.md](docs/arcade-metadata.md) for the game-owned manifest and screenshot provenance.
