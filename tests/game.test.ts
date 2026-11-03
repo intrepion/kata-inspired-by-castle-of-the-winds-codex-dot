@@ -384,3 +384,10 @@ test("corrupt guardian flags, enemy HTML and duplicate salvage cannot enter the 
     assert.equal(decode(encode(s)), null);
   }
 });
+test('diagonal movement and melee take one beat while blocked corners are free',()=>{
+ const s=arena(),f=s.floors[0];f.tiles=Array.from({length:H},(_,y)=>Array.from({length:W},(_,x)=>x===0||y===0||x===W-1||y===H-1?'#':'.').join(''));f.loot=[];s.pos={x:5,y:5};
+ const moved=act(s,{type:'move',dx:1,dy:1});assert.deepEqual(moved.pos,{x:6,y:6});assert.equal(moved.turn,s.turn+1);
+ f.tiles[5]=f.tiles[5].slice(0,6)+'#'+f.tiles[5].slice(7);const blocked=act(s,{type:'move',dx:1,dy:1});assert.equal(blocked.turn,s.turn);assert.deepEqual(blocked.pos,s.pos);
+ f.tiles[5]='#'+'.'.repeat(W-2)+'#';f.enemies=[{id:88,name:'Test pursuer',x:6,y:6,hp:20,attack:3,ranged:false,boss:false}];
+ const struck=act(s,{type:'move',dx:1,dy:1});assert.deepEqual(struck.pos,s.pos);assert.equal(struck.floors[0].enemies[0].hp,16);assert.ok(struck.hp<s.hp);
+});

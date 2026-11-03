@@ -118,6 +118,10 @@ export const maxMana = (s: Game) =>
   12 + Math.floor(s.xp / 12) * 2 + ITEMS[s.weapon].mana + ITEMS[s.armor].mana;
 export const tile = (f: Floor, p: Point) =>
   p.x < 0 || p.y < 0 || p.x >= W || p.y >= H ? "#" : f.tiles[p.y][p.x];
+export function clearStep(f:Floor,a:Point,b:Point){
+ const dx=b.x-a.x,dy=b.y-a.y;
+ return Number.isInteger(dx)&&Number.isInteger(dy)&&Math.max(Math.abs(dx),Math.abs(dy))===1&&tile(f,b)!=='#'&&(!dx||!dy||(tile(f,{x:a.x+dx,y:a.y})!=='#'&&tile(f,{x:a.x,y:a.y+dy})!=='#'));
+}
 export function los(f: Floor, a: Point, b: Point) {
   let x = a.x,
     y = a.y;
@@ -275,7 +279,7 @@ function enemyBeat(s: Game) {
   const f = s.floors[s.floor - 1];
   for (const e of f.enemies) {
     if (distance(e, s.pos) > 8 || !los(f, e, s.pos)) continue;
-    if (distance(e, s.pos) === 1 || (e.ranged && distance(e, s.pos) <= 4)) {
+    if (clearStep(f,e,s.pos) || (e.ranged && distance(e, s.pos) <= 4)) {
       const n = Math.max(1, e.attack - ITEMS[s.armor].defense - (s.ward > 0 ? 3 : 0));
       s.hp -= n;
       note(s, `${e.name} ${e.ranged ? "rings" : "strikes"} for ${n}.`);
@@ -291,11 +295,12 @@ function enemyBeat(s: Game) {
           [-1, 0],
           [0, 1],
           [0, -1],
+          [1,1],[1,-1],[-1,1],[-1,-1],
         ]) {
           const q = { x: p.x + dx, y: p.y + dy },
             k = q.y * W + q.x;
           if (
-            tile(f, q) === "#" ||
+            !clearStep(f,p,q) ||
             visited.has(k) ||
             f.enemies.some((m) => m !== e && m.x === q.x && m.y === q.y)
           )
@@ -356,13 +361,13 @@ export function act(original: Game, a: Action): Game {
       } else note(s, "Spell failed: check focus, active ward, or a clear unoccupied blink tile within 3 steps.");
     } else note(s, "Learn the spell first; cast only in a dungeon.");
   } else if (a.type === "move") {
-    if (Math.abs(a.dx) + Math.abs(a.dy) !== 1) return s;
+    if (!Number.isInteger(a.dx)||!Number.isInteger(a.dy)||Math.max(Math.abs(a.dx),Math.abs(a.dy))!==1) return s;
     const p = { x: s.pos.x + a.dx, y: s.pos.y + a.dy };
     if (s.floor === 0) {
       if (p.x < 1 || p.x > 7 || p.y < 1 || p.y > 5) return s;
       s.pos = p;
       committed = true;
-    } else if (tile(f, p) !== "#") {
+    } else if (clearStep(f,s.pos,p)) {
       const e = f.enemies.find((m) => m.x === p.x && m.y === p.y);
       if (e) damage(s, e, ITEMS[s.weapon].attack);
       else {

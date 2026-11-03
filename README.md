@@ -6,7 +6,7 @@ An original, playable browser adventure inspired by the classic windowed dungeon
 Three connected seeded depths, fog and remembered terrain, bump combat, sentries, magic, salvage, inventory/equipment, refuge provisions, experience, journal, complete ending and validated autosaves. Defeat rescues you at refuge and costs carried gold; expedition progress remains. Free refuge rest restores health and focus. No assets, maps, characters or text copied from Castle of the Winds.
 
 ## Controls
-Arrow keys / WASD move or attack. Space waits (+1 focus), E uses stairs, H mends, P drinks. Click adjacent tiles or use the touch d-pad. Bolt targets are visible buttons; failed actions and reading menus are free. Held movement keys are ignored after the initial action. Focused controls isolate gameplay shortcuts.
+Arrow keys / WASD move or attack; keypad 1–9 adds all eight directions. Diagonal steps and melee take one beat, as do enemy diagonal steps. Solid wall corners cannot be squeezed through. Space waits (+1 focus), E uses stairs, H mends, P drinks. Click adjacent tiles or use the touch d-pad. Bolt targets are visible buttons; failed actions and reading menus are free. Held movement keys are ignored after the initial action. Focused controls isolate gameplay shortcuts.
 
 ## Develop and verify
 Node 24 recommended.
