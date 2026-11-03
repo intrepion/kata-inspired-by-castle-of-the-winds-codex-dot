@@ -1,4 +1,6 @@
 # The Lantern Below
+
+[Kata Arcade](https://intrepion.github.io/)
 An original, playable browser adventure inspired by the classic windowed dungeon RPG form. Bring three lost beacon seals home from a coastal labyrinth and silence its Bellkeeper.
 
 **Play on this Mac:** http://127.0.0.1:5215/
