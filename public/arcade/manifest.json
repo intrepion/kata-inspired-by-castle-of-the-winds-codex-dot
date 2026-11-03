@@ -4,65 +4,43 @@
   "playUrl": "https://intrepion.github.io/kata-inspired-by-castle-of-the-winds-codex-dot/",
   "screenshots": [
     {
-      "path": "arcade/screenshots/view-01.jpg",
-      "sha256": "67f7ba691da8f045c839f08060583dbda925a769fce3950a70ed7e2830624ef3",
-      "alt": "Gameplay capture 1",
-      "provenance": {
-        "kind": "existing_repository_capture",
-        "sourcePath": "docs/screenshots/starting-game.jpg",
-        "deployedBuild": null,
-        "captureDate": null
-      }
-    },
-    {
-      "path": "arcade/screenshots/view-02.jpg",
-      "sha256": "55f1b197c7eeeb918929c033180306f16edb698f64e10df08bcac14eec10c432",
-      "alt": "Gameplay capture 2",
-      "provenance": {
-        "kind": "existing_repository_capture",
-        "sourcePath": "docs/qa/fidelity-2026-10-15/ward-enemy-response.jpg",
-        "deployedBuild": null,
-        "captureDate": null
-      }
-    },
-    {
-      "path": "arcade/screenshots/ci-20261102-01.jpg",
-      "sha256": "2a12a26a434eb92aaf408dfbf2c31ee091481fe829d364639dc690f27ad8a66a",
-      "alt": "The Lantern Below gameplay, view 1",
+      "path": "arcade/screenshots/review-20261103-01.jpg",
+      "sha256": "79c1b668ea44c56ed3a071c9e71c17414b3b2d1d6441b4994d0d2faef59b5a18",
+      "alt": "The Lantern Below gameplay after the mechanics update, view 1",
       "provenance": {
         "kind": "ci_gameplay_capture",
-        "sourcePath": "arcade/capture-evidence/ci-20261102-01.png",
-        "sourceSha256": "7ff6d46af8b3cca36e64a619db51be6015abf69f5943fe0004a201adc39953ae",
-        "captureCommit": "10b7146306c9f022095ae449bd03dbfcc77ab57f",
-        "workflowRunId": "41434429412",
+        "sourcePath": "arcade/capture-evidence/review-20261103-01.png",
+        "sourceSha256": "144dc2e52159343bca6d8cc64601b1efc00397d92527eb9cf98afeb08600eb47",
+        "captureCommit": "0c045b8315da04f191a52eb68b8a893d758472a5",
+        "workflowRunId": "41675249279",
         "inputHashes": {
-          "index.html": "196116419b520471316f98d9dfe1fc806b32cc71a3961b1a38ae675aeff6902f",
-          "assets/index-D0VY4hOi.js": "3b2c464242aa6c288538914fac83e09c7b21ae3e062cb9e3e4d90ce5132151f1",
-          "assets/index-Dc1fvIX5.css": "6823764e98fae0849ed5b10d3d91879b9f4446fbed4b3f306fb50a7065211b0f"
+          "index.html": "b618825f2b6ac113891d8096bfbf78846affc53d14becf0c0ebb7e184e68dc53",
+          "assets/index-Dc1fvIX5.css": "6823764e98fae0849ed5b10d3d91879b9f4446fbed4b3f306fb50a7065211b0f",
+          "assets/index-CcmWKFhf.js": "a2932c1378bca4afa79dddbccc67230b27635c5e7d0e657acb4b8d5009f38350"
         },
-        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
-        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
-        "captureRecordSha256": "0fc1883dcd90772de4e7f19bbac7ce06341f40a5d15fdee2cea246d62abcee34"
+        "publishedFilesVerifiedAt": "2026-11-03T16:39:47Z",
+        "captureRecordPath": "arcade/capture-evidence/review-20261103-record.json",
+        "captureRecordSha256": "08d18803a95a83e38a9fe50f82077847c38a5d686405281716ef96a9618fb866"
       }
     },
     {
-      "path": "arcade/screenshots/ci-20261102-02.jpg",
-      "sha256": "e447a74e7e62b546e89ff87334bb9169ead391c8179aa7c806adec8dd93f7ddd",
-      "alt": "The Lantern Below gameplay, view 2",
+      "path": "arcade/screenshots/review-20261103-02.jpg",
+      "sha256": "5421ecdfe50d5c82024928f282e8adad875d2ffe6e10afc2264288b4f97ac81a",
+      "alt": "The Lantern Below gameplay after the mechanics update, view 2",
       "provenance": {
         "kind": "ci_gameplay_capture",
-        "sourcePath": "arcade/capture-evidence/ci-20261102-02.png",
-        "sourceSha256": "8d91669b21602f4a793e55de62740f3d957f5c35ef8d1f8763fce89ff1253469",
-        "captureCommit": "10b7146306c9f022095ae449bd03dbfcc77ab57f",
-        "workflowRunId": "41434429412",
+        "sourcePath": "arcade/capture-evidence/review-20261103-02.png",
+        "sourceSha256": "6980576527dc2277c495cb4af1c22be78b6e9a4430547e49a649d02f68334181",
+        "captureCommit": "0c045b8315da04f191a52eb68b8a893d758472a5",
+        "workflowRunId": "41675249279",
         "inputHashes": {
-          "index.html": "196116419b520471316f98d9dfe1fc806b32cc71a3961b1a38ae675aeff6902f",
-          "assets/index-D0VY4hOi.js": "3b2c464242aa6c288538914fac83e09c7b21ae3e062cb9e3e4d90ce5132151f1",
-          "assets/index-Dc1fvIX5.css": "6823764e98fae0849ed5b10d3d91879b9f4446fbed4b3f306fb50a7065211b0f"
+          "index.html": "b618825f2b6ac113891d8096bfbf78846affc53d14becf0c0ebb7e184e68dc53",
+          "assets/index-Dc1fvIX5.css": "6823764e98fae0849ed5b10d3d91879b9f4446fbed4b3f306fb50a7065211b0f",
+          "assets/index-CcmWKFhf.js": "a2932c1378bca4afa79dddbccc67230b27635c5e7d0e657acb4b8d5009f38350"
         },
-        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
-        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
-        "captureRecordSha256": "0fc1883dcd90772de4e7f19bbac7ce06341f40a5d15fdee2cea246d62abcee34"
+        "publishedFilesVerifiedAt": "2026-11-03T16:39:47Z",
+        "captureRecordPath": "arcade/capture-evidence/review-20261103-record.json",
+        "captureRecordSha256": "08d18803a95a83e38a9fe50f82077847c38a5d686405281716ef96a9618fb866"
       }
     }
   ]
